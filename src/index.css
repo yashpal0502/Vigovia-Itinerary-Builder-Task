@@ -1,0 +1,7 @@
+@import "tailwindcss";
+I
+/* // Add this CSS to your stylesheet */
+.pdf-section {
+  page-break-inside: avoid;
+  margin-bottom: 20px;
+}
