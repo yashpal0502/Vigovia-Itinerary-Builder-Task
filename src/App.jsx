@@ -7,7 +7,7 @@ export default function App() {
   const [showBuilder, setShowBuilder] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 print-font flex flex-col lg:flex-row gap-8">
+    <div className="min-h-screen bg-gray-100 p-8 print-font flex flex-col gap-8">
       {/* Form Section */}
       <div className="flex-1">
         <ItineraryForm onSubmit={() => setShowBuilder(true)} />

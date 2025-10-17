@@ -20,27 +20,35 @@ export default function ItineraryBuilder() {
   const { data } = useAppContext();
   const printRef = useRef(null);
 
-  // Add this effect to log updates
   useEffect(() => {
     console.log("ItineraryBuilder received updated data:", data);
   }, [data]);
 
   const downloadPDF = async () => {
-    const element = printRef.current;
-    if (!element) return;
+    const container = printRef.current;
+    if (!container) return;
 
     try {
-      // Create a high-resolution canvas with better settings
-      const canvas = await html2canvas(element, {
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: "a4",
+        compress: true,
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // render the entire container into one canvas
+      const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
-        logging: true,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
+        logging: false,
+        windowWidth: container.scrollWidth,
+        windowHeight: container.scrollHeight,
         onclone: (document) => {
-          // Ensure all images are loaded
           const images = document.getElementsByTagName("img");
           return Promise.all(
             Array.from(images).map((img) => {
@@ -55,43 +63,21 @@ export default function ItineraryBuilder() {
       });
 
       const imgData = canvas.toDataURL("image/png", 1.0);
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "px",
-        format: "a4",
-        compress: true,
-      });
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Fit entire content into one PDF page by scaling down if necessary
+      let imgWidth = pageWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Calculate the number of pages needed
-      const pageCount = Math.ceil(imgHeight / pageHeight);
-
-      // Add each page
-      for (let i = 0; i < pageCount; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-
-        // Calculate the height of content to show on this page
-        const sourceY = i * pageHeight;
-        const contentHeight = Math.min(pageHeight, imgHeight - sourceY);
-
-        pdf.addImage(
-          imgData,
-          "PNG",
-          0,
-          i === 0 ? 0 : -sourceY,
-          imgWidth,
-          imgHeight,
-          undefined,
-          "FAST"
-        );
+      if (imgHeight > pageHeight) {
+        const fitScale = pageHeight / imgHeight;
+        imgHeight = pageHeight;
+        imgWidth = imgWidth * fitScale;
       }
 
+      const xOffset = Math.max(0, (pageWidth - imgWidth) / 2);
+      const yOffset = Math.max(0, (pageHeight - imgHeight) / 2);
+
+      pdf.addImage(imgData, "PNG", xOffset, yOffset, imgWidth, imgHeight, undefined, "FAST");
       pdf.save("itinerary.pdf");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -160,7 +146,6 @@ export default function ItineraryBuilder() {
         </div>
 
         {/* Terms and Conditions */}
-
         <div className="py-5 border-b">
           <h4 className="text-2xl font-semibold pb-2">
             Terms and <span className="text-purple-800">Conditions</span>
@@ -177,18 +162,14 @@ export default function ItineraryBuilder() {
         <VisaDetail />
 
         {/* Book Button */}
-
         <div className="flex flex-col justify-center items-center py-8 gap-4">
-          <p className="text-3xl font-semibold text-purple-900">
-            PLAN.PACK.GO!
-          </p>
+          <p className="text-3xl font-semibold text-purple-900">PLAN.PACK.GO!</p>
           <div className="bg-purple-900 px-25 py-3 text-white rounded-full">
             <button className="font-semibold">Book Now</button>
           </div>
         </div>
 
         {/* Footer */}
-
         <Footer />
       </div>
     </div>
